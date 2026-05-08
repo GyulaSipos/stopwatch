@@ -1,6 +1,8 @@
 //Since you mentioned you rolled out your own thing for basically everything, i take this as an opportunity to do the same.
 //So, this is a minimum viable DI container baby based on the service locator pattern that hypotetically could grow with us during the project lifetime
 
+import 'package:flutter/material.dart';
+
 class DI {
   //This can hold one factory per type. Good for now, could be expanded if we want to incorporate ProviderFamily-like functionality
   static final Map<Token, Factory> _factories = {};
@@ -70,16 +72,48 @@ class DI {
     }
     _container.remove(token);
     _dependents.remove(token);
+    token._notify();
   }
 }
 
 //lightweight class used as a locator for providers
-final class Token<T> {
-  //creates a new object every time
+final class Token<T> extends ChangeNotifier {
+  //creates a new object every time, only allows tokens to be created in this file
   Token._();
 
   Type get type => T;
+
+//here to track changes reactively in widgets
+  void _notify() => notifyListeners();
 }
+
+mixin DIListen<T extends StatefulWidget> on State<T> {
+  // Store the tokens this widget is currently listening to
+  final Set<Token> _subscribedTokens = {};
+
+  /// Use this inside your build method: DI.get(this, myToken)
+  S watch<S>(Token<S> token) {
+    if (!_subscribedTokens.contains(token)) {
+      token.addListener(_handleTokenChange);
+      _subscribedTokens.add(token);
+    }
+    return DI.get(token);
+  }
+
+  @override
+  void dispose() {
+    // Clean up all subscriptions when widget leaves
+    for (var token in _subscribedTokens) {
+      token.removeListener(_handleTokenChange);
+    }
+    super.dispose();
+  }
+
+  void _handleTokenChange() {
+    if (mounted) setState(() {});
+  }
+}
+
 
 // since everything is static in the DI, no need to pass it in here like usual, factories just can DI.get() themselves
 typedef Factory<T> = T Function();
