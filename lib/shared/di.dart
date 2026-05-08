@@ -12,20 +12,29 @@ class DI {
   static final Map<Type, Set<Type>> _dependents = {};
 
   static void register<T>(Factory<T> factory) {
+    _factories[T] = factory;
+    //If an older version of the same type is already live, get rid of those
     if (_container.containsKey(T)) {
-      //If an older version of the same type is already live, get rid of those first
       _invalidate(T);
     }
-    _factories[T] = factory;
   }
 
   //We track what type the [get] was called on, so with other [get] calls during the initial get we can autimatically track dependencies
   static Type? _typeCurrentlyGetting;
+  //Track build types to prevent circular dependencies
+  static final Set<Type> _circuitBreaker = {};
 
   //dependets tracking relies on this being a sync call. Update dependents tracking first if you want this to be async (but you shouldn't want)
   static T get<T>() {
     if (_container.containsKey(T)) {
       return _container[T];
+    }
+
+    final wasNotAlreadyDependent = _circuitBreaker.add(T);
+    if (!wasNotAlreadyDependent) {
+      throw CircularDependencyException(
+        'Exception: $T is trying to depend on itself via ${_circuitBreaker.join(' -> ')} -> $T',
+      );
     }
 
     //if this [get] is called during a [get] call, we know that the type of the original call is depending on this type
@@ -37,7 +46,7 @@ class DI {
 
     final factory = _factories[T];
     if (factory == null) {
-      throw Exception("Forgot to register factory for $T");
+      throw MissingFactoryException("Forgot to register factory for $T");
     } else {
       final previousBuilding = _typeCurrentlyGetting;
       _typeCurrentlyGetting = T;
@@ -47,20 +56,27 @@ class DI {
         return instance as T;
       } finally {
         _typeCurrentlyGetting = previousBuilding;
+        //By removing only this value (and not clearing everything), we circumvent false positive circular errors in sibling dependencies
+        _circuitBreaker.remove(T);
       }
     }
   }
 
-  static void _invalidate<T>(T type) {
+  static void _invalidate(Type type) {
     final dependents = _dependents[type];
     if (dependents != null) {
-      for (final dependency in dependents) {
+      //deep copy the list to prevent concurrent modification
+      for (final dependency in List.from(dependents)) {
         _invalidate(dependency);
       }
     }
     _container.remove(type);
+    _dependents.remove(type);
   }
 }
 
 // since everything is static in the DI, no need to pass it in here like usual, factories just can DI.get() themselves
 typedef Factory<T> = T Function();
+//convinience typedefs for DX
+typedef CircularDependencyException = Exception;
+typedef MissingFactoryException = Exception;
