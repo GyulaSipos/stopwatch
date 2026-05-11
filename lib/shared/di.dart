@@ -126,7 +126,7 @@ final class Token<T> extends ChangeNotifier {
   void _notify() => notifyListeners();
 }
 
-mixin DIWatch<T extends StatefulWidget> on State<T> {
+mixin Watch<T extends StatefulWidget> on State<T> {
   // Store the tokens this widget is currently listening to
   final Set<Token> _subscribedTokens = {};
 
