@@ -8,6 +8,7 @@ final class Token<T> {
 
 final class Reference {
   VoidCallback? onDestroy;
+
   T read<T>(Token<T> token) => DI()._read(token);
   T watch<T>(Token<T> token) => DI()._watchFromRef(token);
 }
@@ -15,33 +16,30 @@ final class Reference {
 final class Instance<T> {
   final T value;
   final VoidCallback? onDestroy;
-  // late final bool Function() keepAlive; //future improvement to override dispose logic
 
   Instance(this.value, this.onDestroy);
 }
 
-typedef Factory<T> = Instance<T> Function(Reference ref);
+typedef Factory<T> = T Function(Reference ref);
 
 class MixinNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
 }
 
 class DI {
-  final Map<Token, Factory> _factories = {};
+  static final DI _instance = DI._internal();
 
-  final Map<Token, Instance> _instances = {};
+  factory DI() => _instance;
 
-  final Map<Instance, MixinNotifier> _mixinWatches = {};
+  DI._internal();
 
-  //final Map<Token, dynamic> _mocks = {};
+  final Map<Token<dynamic>, Factory<dynamic>> _factories = {};
+  final Map<Token<dynamic>, Instance<dynamic>> _instances = {};
+  final Map<Token<dynamic>, MixinNotifier> _tokenNotifiers = {};
+  final Map<Token<dynamic>, Set<Token<dynamic>>> _dependents = {};
 
-  //We track what token the [_watchFromRef] was called on, so with other [_watchFromRef] calls during the initial get we can autimatically track dependencies
-  Token? _tokenCurrentlyGetting;
-  //Track build types to prevent circular dependencies
-  final Set<Token> _circuitBreaker = {};
-
-  //If some value invalidates, we want the dependents to do themselves same. This can read dependecies O1;
-  final Map<Instance, Set<Instance>> _dependents = {};
+  final List<Token<dynamic>> _resolutionStack = <Token<dynamic>>[];
+  final Set<Token<dynamic>> _resolving = <Token<dynamic>>{};
 
   Token<T> register<T>(Factory<T> factory) {
     final token = Token<T>._();
@@ -49,122 +47,129 @@ class DI {
     return token;
   }
 
-  T _read<T>(Token<T> token) {
-    if (_instances.containsKey(token)) {
-      return (_instances[token] as Instance<T>).value;
-    } else {
-      final reference = Reference();
-      final value = _factories[token]!.call(reference) as T;
-      final instance = Instance(value, reference.onDestroy);
-      _instances[token] = instance;
-      return instance.value;
-    }
-  }
+  T _read<T>(Token<T> token) => _resolve(token, trackDependency: false);
 
-  T _watchFromRef<T>(Token<T> token) => _watch(token).value;
+  T _watchFromRef<T>(Token<T> token) => _resolve(token, trackDependency: true);
 
   (T, MixinNotifier) _watchFromMixin<T>(Token<T> token) {
-    final instance = _watch(token);
-    final notifier = _mixinWatches[instance] ??= MixinNotifier();
-    _mixinWatches[instance] = notifier;
-    return (instance.value, notifier);
+    return (_read(token), _notifierFor(token));
   }
 
-  Instance<T> _watch<T>(Token<T> token) {
-    final previouslyBuiltToken = _tokenCurrentlyGetting;
-    _tokenCurrentlyGetting = token;
+  MixinNotifier _notifierFor(Token<dynamic> token) {
+    return _tokenNotifiers.putIfAbsent(token, () => MixinNotifier());
+  }
 
-    Instance? instance;
+  void _registerDependency(
+    Token<dynamic> dependency,
+    Token<dynamic> dependent,
+  ) {
+    if (dependency == dependent) {
+      throw StateError('Token ${dependency.type} cannot depend on itself.');
+    }
+    _dependents
+        .putIfAbsent(dependency, () => <Token<dynamic>>{})
+        .add(dependent);
+  }
+
+  String _formatCycle(Token<dynamic> repeated) {
+    final start = _resolutionStack.indexOf(repeated);
+    final cycle = start == -1
+        ? <Token<dynamic>>[..._resolutionStack, repeated]
+        : <Token<dynamic>>[..._resolutionStack.sublist(start), repeated];
+
+    return cycle.map((token) => token.type.toString()).join(' -> ');
+  }
+
+  T _resolve<T>(Token<T> token, {required bool trackDependency}) {
+    final parent = _resolutionStack.isEmpty ? null : _resolutionStack.last;
+
+    final existing = _instances[token];
+    if (existing != null) {
+      if (trackDependency && parent != null) {
+        _registerDependency(token, parent);
+      }
+      return existing.value as T;
+    }
+
+    if (_resolving.contains(token)) {
+      throw StateError(
+        'Circular dependency during ${token.type} build via: ${_formatCycle(token)}',
+      );
+    }
+
+    final factory = _factories[token];
+    if (factory == null) {
+      throw StateError('No factory registered for ${token.type}.');
+    }
+
+    _resolving.add(token);
+    _resolutionStack.add(token);
+
     try {
-      //we check for key existence instead of value to allow null as value
-      if (_instances.containsKey(token)) {
-        instance = _instances[token] as Instance<T>;
-      } else {
-        // Since we rebuild this entry, we should remove it from the dependents tree, so discarded dependencies won't stick around
-        invalidate(token);
-        final reference = Reference();
-        final value = _factories[token]!.call(reference); //TODO: error checks
-        instance = Instance(value, reference.onDestroy);
-        _instances[token] = instance;
+      final reference = Reference();
+      final value = (factory as Factory<T>)(reference);
+
+      _instances[token] = Instance(value, reference.onDestroy);
+
+      if (trackDependency && parent != null) {
+        _registerDependency(token, parent);
       }
 
-      //check for circular dependencies
-      final wasAdded = _circuitBreaker.add(token);
-      if (!wasAdded) {
-        throw Exception(
-          "Circular dependency during ${token.type} build via: ${_circuitBreaker.join(" -> ")}",
-        );
-      }
-
-      //build the dependency graph
-      if (previouslyBuiltToken != null) {
-        final dependingInstance = _instances[previouslyBuiltToken]!;
-        _dependents[instance] ??= {};
-        _dependents[instance]!.add(dependingInstance);
-      }
-      return instance as Instance<T>;
+      return value;
     } finally {
-      _tokenCurrentlyGetting = previouslyBuiltToken;
-      //By removing only this value (and not clearing everything), we circumvent false positive circular errors in sibling dependencies
-      _circuitBreaker.remove(instance);
+      _resolutionStack.removeLast();
+      _resolving.remove(token);
     }
   }
 
-  final _visitedInstances = <Instance>{};
+  void invalidate(Token<dynamic> token) {
+    final visited = <Token<dynamic>>{};
+    _invalidateRecursive(token, visited);
+  }
 
-  void invalidate(Token token) {
+  void _invalidateRecursive(Token<dynamic> token, Set<Token<dynamic>> visited) {
+    if (!visited.add(token)) return;
+
+    final dependents = List<Token<dynamic>>.from(
+      _dependents[token] ?? const [],
+    );
+    for (final dependent in dependents) {
+      _invalidateRecursive(dependent, visited);
+    }
+
+    final instance = _instances.remove(token);
+    _removeDependencyLinks(token);
+
     try {
-      final instance = _instances[token];
-      if (instance != null) {
-        _invalidateRecursive(instance);
-      }
+      instance?.onDestroy?.call();
     } finally {
-      _visitedInstances.clear();
+      _tokenNotifiers[token]?.notify();
     }
   }
 
-  void _invalidateRecursive(Instance instance) {
-    final dependents = _dependents[instance];
-    if (dependents != null) {
-      //deep copy the list to prevent concurrent modification
-      for (final dependency in List<Instance>.from(dependents)) {
-        if (!_visitedInstances.contains(dependency)) {
-          _invalidateRecursive(dependency);
-        }
-      }
+  void _removeDependencyLinks(Token<dynamic> token) {
+    _dependents.remove(token);
+    for (final dependents in _dependents.values) {
+      dependents.remove(token);
     }
-    instance.onDestroy?.call();
-    final notifier = _mixinWatches.remove(instance);
-    notifier!.notify();
-    notifier.dispose();
-    _instances.removeWhere((_, value) => value == instance);
-    _dependents.remove(instance);
-    _visitedInstances.add(instance);
   }
 
-  void _unwatchFromMixin(Token token, VoidCallback listener) {
-    final instance = _instances[token];
-    final notifier = _mixinWatches[instance];
-    notifier?.removeListener(listener);
+  void _unwatchFromMixin(Token<dynamic> token, VoidCallback listener) {
+    _tokenNotifiers.remove(token)?.removeListener(listener);
   }
 }
 
 mixin Watch<T extends StatefulWidget> on State<T> {
-  //here to track watch changes between rebuilds and remove unised ones
-  final Set<Token> _subscribedTokens = {};
-  final Set<Token> _usedInCurrentFrame = {};
+  final Set<Token<dynamic>> _subscribedTokens = <Token<dynamic>>{};
+  final Set<Token<dynamic>> _usedInCurrentFrame = <Token<dynamic>>{};
   bool _isCleanupScheduled = false;
 
   S watch<S>(Token<S> token) {
     _usedInCurrentFrame.add(token);
-    late S value;
-    if (!_subscribedTokens.contains(token)) {
-      _subscribedTokens.add(token);
-      final (returnValue, notifier) = DI()._watchFromMixin(token);
+
+    final (value, notifier) = DI()._watchFromMixin(token);
+    if (_subscribedTokens.add(token)) {
       notifier.addListener(_handleTokenChange);
-      value = returnValue;
-    } else {
-      value = DI()._read(token);
     }
 
     if (!_isCleanupScheduled) {
@@ -173,6 +178,7 @@ mixin Watch<T extends StatefulWidget> on State<T> {
         (_) => _pruneSubscriptions(),
       );
     }
+
     return value;
   }
 
@@ -190,14 +196,16 @@ mixin Watch<T extends StatefulWidget> on State<T> {
 
   void _pruneSubscriptions() {
     if (!mounted) return;
+
     final unusedTokens = _subscribedTokens.difference(_usedInCurrentFrame);
     _deactivateListening(unusedTokens);
+
     _usedInCurrentFrame.clear();
     _isCleanupScheduled = false;
   }
 
-  void _deactivateListening(Set<Token> tokens) {
-    for (final token in List.from(tokens)) {
+  void _deactivateListening(Set<Token<dynamic>> tokens) {
+    for (final token in List<Token<dynamic>>.from(tokens)) {
       _subscribedTokens.remove(token);
       DI()._unwatchFromMixin(token, _handleTokenChange);
     }
