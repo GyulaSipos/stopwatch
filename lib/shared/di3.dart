@@ -13,12 +13,14 @@ final class Reference {
 }
 
 final class Instance<T> {
-  late final T value;
-  late final VoidCallback? onDestroy;
+  final T value;
+  final VoidCallback? onDestroy;
   // late final bool Function() keepAlive; //future improvement to override dispose logic
+
+  Instance(this.value, this.onDestroy);
 }
 
-typedef Factory<T> = T Function(Reference ref);
+typedef Factory<T> = Instance<T> Function(Reference ref);
 
 class MixinNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
@@ -36,7 +38,7 @@ class DI {
   //We track what token the [_watchFromRef] was called on, so with other [_watchFromRef] calls during the initial get we can autimatically track dependencies
   Token? _tokenCurrentlyGetting;
   //Track build types to prevent circular dependencies
-  final Set<Instance> _circuitBreaker = {};
+  final Set<Token> _circuitBreaker = {};
 
   //If some value invalidates, we want the dependents to do themselves same. This can read dependecies O1;
   final Map<Instance, Set<Instance>> _dependents = {};
@@ -52,8 +54,8 @@ class DI {
       return (_instances[token] as Instance<T>).value;
     } else {
       final reference = Reference();
-      final instance = _factories[token]!.call(reference) as Instance<T>;
-      instance.onDestroy = reference.onDestroy;
+      final value = _factories[token]!.call(reference) as T;
+      final instance = Instance(value, reference.onDestroy);
       _instances[token] = instance;
       return instance.value;
     }
@@ -81,13 +83,13 @@ class DI {
         // Since we rebuild this entry, we should remove it from the dependents tree, so discarded dependencies won't stick around
         invalidate(token);
         final reference = Reference();
-        instance = _factories[token]!.call(reference); //TODO: error checks
-        instance?.onDestroy = reference.onDestroy;
-        _instances[token] = instance!;
+        final value = _factories[token]!.call(reference); //TODO: error checks
+        instance = Instance(value, reference.onDestroy);
+        _instances[token] = instance;
       }
 
       //check for circular dependencies
-      final wasAdded = _circuitBreaker.add(instance);
+      final wasAdded = _circuitBreaker.add(token);
       if (!wasAdded) {
         throw Exception(
           "Circular dependency during ${token.type} build via: ${_circuitBreaker.join(" -> ")}",
@@ -113,7 +115,9 @@ class DI {
   void invalidate(Token token) {
     try {
       final instance = _instances[token];
-      _invalidateRecursive(instance!);
+      if (instance != null) {
+        _invalidateRecursive(instance);
+      }
     } finally {
       _visitedInstances.clear();
     }
