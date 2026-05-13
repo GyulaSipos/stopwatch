@@ -10,7 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   # functional dependencies
+  flutter_riverpod: ^3.3.1 #DI container and state management
+  riverpod_lint: ^3.1.3 #linter extension to help development with riverpod
   sqflite: ^2.4.2+1 #to store state locally
+  
 
 dev_dependencies:
   flutter_test:

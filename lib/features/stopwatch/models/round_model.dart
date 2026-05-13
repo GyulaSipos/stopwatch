@@ -1,4 +1,4 @@
-// Here for future expandability for when business comes up with new requirements.
+// This class is here for future expandability for when business comes up with new requirements.
 // For example "allow the user to take notes on their stopwatch events".
 // This structure supports those expansions, without being too cumbersome
 // to give a strong sense of YAGNI
