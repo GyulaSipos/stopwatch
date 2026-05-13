@@ -3,6 +3,7 @@ import 'package:stopwatch/core/app_exception.dart';
 import 'package:stopwatch/core/box.dart';
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 
 final roundModelLocalDataSourceProvider = Provider<IRoundModelLocalDataSource>(
   (_) => RoundModelLocalDataSource(),
@@ -125,7 +126,7 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
         for (final event in model.events) {
           batch.insert(
             _tableStopwatchEvent,
-            event.toMap(),
+            event.toMap(model.id),
             //do not rewrite the past. If [StopWatchEvent] gets editable fields, change this to .replace
             conflictAlgorithm: ConflictAlgorithm.ignore,
           );

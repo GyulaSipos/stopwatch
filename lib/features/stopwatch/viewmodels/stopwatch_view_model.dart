@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch/core/box.dart';
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
+import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/repositories/stopwatch_repository.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dart';
 
@@ -11,6 +12,7 @@ final stopwatchViewModelProvider = Provider(
 class StopwatchViewModel extends Notifier<StopwatchViewState> {
   final IStopwatchRepository repository;
   int? _lastCheckpointTimestamp;
+  RoundModel? _currentRoundModel;
 
   StopwatchViewModel(this.repository);
 
@@ -19,12 +21,15 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
     listenSelf((_, next) {
       if (next case Running() || Resume()) {
         //TODO: implement ticker behavior
+        //advance total time
+        //advance latest lap time
       }
     });
     repository.getLatestTwo().then((box) {
       if (box.noValue || box.value!.isEmpty) {
         state = Stopped();
       } else {
+        _currentRoundModel = box.value!.last;
         //we made sure to always get the events in timestamp ASC
         switch (box.value!.last!.events.last) {
           case Start(:final timeStamp):
@@ -32,7 +37,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
           case Lap(:final timeStamp):
             _lastCheckpointTimestamp = timeStamp;
             state = Running(
-              _stopwatchValuesFromDuration(
+              values: _stopwatchValuesFromDuration(
                 _totalRunningDuration(box.value!.last!.events),
               ),
               latestEntry: box.value!.length == 2
@@ -41,7 +46,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
             );
           case Pause():
             state = Paused(
-              _stopwatchValuesFromDuration(
+              values: _stopwatchValuesFromDuration(
                 _totalRunningDuration(box.value!.last!.events),
               ),
               latestEntry: box.value!.length == 2
@@ -50,6 +55,9 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
             );
           case End():
             state = Stopped(
+              values: _stopwatchValuesFromDuration(
+                _totalRunningDuration(box.value!.last!.events),
+              ),
               latestEntry: box.value!.length == 2
                   ? _convertModelToHistoryEntry(box.value!.first)
                   : null,
@@ -60,9 +68,26 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
     return Loading();
   }
 
-  StopwatchValues _stopwatchValuesFromLatestCheckpoint() {
+  void recordLap() async {
+    final now = DateTime.now();
+    //if we allow lap during pause, do not let the user record multiple laps while paused
+    if (now.millisecondsSinceEpoch == _lastCheckpointTimestamp) return;
+    final values = _stopwatchValuesFromLatestCheckpoint(now);
+    state = state.copyWith(laps: [...state.laps, values]);
+    _lastCheckpointTimestamp = now.millisecondsSinceEpoch;
+    repository.upsert(
+      _currentRoundModel!.copyWith(
+        copyEvents: [
+          ..._currentRoundModel!.events,
+          Lap(now.millisecondsSinceEpoch),
+        ],
+      ),
+    );
+  }
+
+  StopwatchValues _stopwatchValuesFromLatestCheckpoint(DateTime current) {
     if (_lastCheckpointTimestamp == null) return (0, 0, 0, 0, 0, 0);
-    final duration = DateTime.now().difference(
+    final duration = current.difference(
       DateTime.fromMillisecondsSinceEpoch(_lastCheckpointTimestamp!),
     );
     return _stopwatchValuesFromDuration(duration);
