@@ -1,11 +1,11 @@
 
-sealed class StopwatchViewState({final WatchFace? watchFace, final HistoryEntry? latestEntry, final WatchFace? currentLap, final List<WatchFace> laps = const []}) {
+sealed class StopwatchViewState({required final Watchface watchFace, final HistoryEntry? latestEntry, final Watchface? currentLap, final List<Watchface> laps = const []}) {
 
 StopwatchViewState copyWith({
-   WatchFace? watchFace,
+   Watchface? watchFace,
    HistoryEntry? latestEntry,
-   WatchFace? currentLap,
-   List<WatchFace>? laps,
+   Watchface? currentLap,
+   List<Watchface>? laps,
    }) {
     return switch (this) {
       Loading() => Loading(),
@@ -33,13 +33,13 @@ StopwatchViewState copyWith({
 }
 
 
-class Loading extends StopwatchViewState {}
-class Running({required super.watchFace, super.latestEntry, super.currentLap, super.laps}) extends StopwatchViewState {}
-class Paused({ required super.watchFace, super.latestEntry, super.currentLap, super.laps}) extends StopwatchViewState {}
-class Stopped({ super.watchFace, super.latestEntry, super.currentLap, super.laps}) extends StopwatchViewState {}
+class Loading({Watchface super.watchFace = defaultWatchFace}) extends StopwatchViewState {}
+class Running({required Watchface super.watchFace, HistoryEntry? super.latestEntry, Watchface? super.currentLap, List<Watchface> super.laps}) extends StopwatchViewState {}
+class Paused({ required Watchface super.watchFace, HistoryEntry? super.latestEntry, Watchface? super.currentLap, List<Watchface> super.laps}) extends StopwatchViewState {}
+class Stopped({required Watchface super.watchFace, HistoryEntry? super.latestEntry, Watchface? super.currentLap, List<Watchface> super.laps}) extends StopwatchViewState {}
 
 
-typedef WatchFace = (
+typedef Watchface = (
   int tenMinutes,
   int minutes,
   int tenSeconds,
@@ -48,4 +48,5 @@ typedef WatchFace = (
   int tensMilliseconds,
 );
 
-typedef HistoryEntry = (DateTime start, WatchFace values);
+typedef HistoryEntry = (DateTime start, Watchface values);
+const defaultWatchFace = (0, 0, 0, 0, 0, 0);

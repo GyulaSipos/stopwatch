@@ -7,46 +7,48 @@ import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/repositories/stopwatch_repository.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dart';
 
-final stopwatchViewModelProvider = Provider(
-  (ref) => StopwatchViewModel(ref.watch(stopwatchRepositoryProvider)),
-);
+final stopwatchViewModelProvider = NotifierProvider<StopwatchViewModel, StopwatchViewState>(StopwatchViewModel.new);
 
 class StopwatchViewModel extends Notifier<StopwatchViewState> {
-  final IStopwatchRepository _repository;
   int? _lastCheckpointTimestamp;
   RoundModel? _currentRoundModel;
   StreamSubscription? _tickerSub;
 
-  StopwatchViewModel(this._repository);
-
   @override
   StopwatchViewState build() {
-    listenSelf((_, next) {
-      if (next is Running) {
-        _tickerSub?.cancel();
+    listenSelf((prev, next) {
+      _tickerSub?.cancel();
+      if (next is Running && prev != next) {
         //16 milliseconds roughly gives us 60fps
+        //This setup prioritizes accuracy and state driven UI instead of performance efficiency.
+        //To make it more performant, we could just fake the hundreds of seconds display with a random animation
+        //while the clock is running (nobody can read those numbers anyways),
+        //and only display the real number when the watch is stopped. That would boost performance 10x
         _tickerSub = Stream.periodic(Duration(milliseconds: 16)).listen((_) {
           state = state.copyWith(
             watchFace: _stopwatchValuesFromDuration(
-              DateTime.now().difference(
-                DateTime.fromMillisecondsSinceEpoch(_currentRoundModel!.id),
-              ),
+              _totalRunningDuration(_currentRoundModel!.events, isCurrentlyRunning: true),
             ),
-            currentLap: state.laps.isEmpty
-                ? null
-                : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
+
+            currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
           );
         });
-      } else {
-        _tickerSub?.cancel();
+        //it's here to sync up the ui state one last time after watch is stopped
+      } else if ((next is Paused || next is End) && prev.runtimeType != next.runtimeType) {
+        state = state.copyWith(
+          watchFace: _stopwatchValuesFromDuration(
+            _totalRunningDuration(_currentRoundModel!.events, isCurrentlyRunning: false),
+          ),
+          currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
+        );
       }
     });
     ref.onDispose(() {
       _tickerSub?.cancel();
     });
-    _repository.getLatestTwo().then((box) {
+    ref.read(stopwatchRepositoryProvider).getLatestTwo().then((box) {
       if (box.noValue || box.value!.isEmpty) {
-        state = Stopped();
+        state = Stopped(watchFace: defaultWatchFace);
       } else {
         _currentRoundModel = box.value!.last;
         //we made sure to always get the events in timestamp ASC
@@ -57,29 +59,19 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
             _lastCheckpointTimestamp = timeStamp;
             state = Running(
               watchFace: _stopwatchValuesFromDuration(
-                _totalRunningDuration(box.value!.last!.events),
+                _totalRunningDuration(box.value!.last!.events, isCurrentlyRunning: true),
               ),
-              latestEntry: box.value!.length == 2
-                  ? _convertModelToHistoryEntry(box.value!.first)
-                  : null,
+              latestEntry: box.value!.length == 2 ? _convertModelToHistoryEntry(box.value!.first) : null,
             );
           case Pause():
             state = Paused(
-              watchFace: _stopwatchValuesFromDuration(
-                _totalRunningDuration(box.value!.last!.events),
-              ),
-              latestEntry: box.value!.length == 2
-                  ? _convertModelToHistoryEntry(box.value!.first)
-                  : null,
+              watchFace: _stopwatchValuesFromDuration(_totalRunningDuration(box.value!.last!.events)),
+              latestEntry: box.value!.length == 2 ? _convertModelToHistoryEntry(box.value!.first) : null,
             );
           case End():
             state = Stopped(
-              watchFace: _stopwatchValuesFromDuration(
-                _totalRunningDuration(box.value!.last!.events),
-              ),
-              latestEntry: box.value!.length == 2
-                  ? _convertModelToHistoryEntry(box.value!.first)
-                  : null,
+              watchFace: _stopwatchValuesFromDuration(_totalRunningDuration(box.value!.last!.events)),
+              latestEntry: box.value!.length == 2 ? _convertModelToHistoryEntry(box.value!.first) : null,
             );
         }
       }
@@ -88,14 +80,13 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void start() {
+    _lastCheckpointTimestamp = _nowStamp;
     state = Running(
-      watchFace: _defaultWatchFace,
-      latestEntry: _currentRoundModel != null
-          ? _convertModelToHistoryEntry(_currentRoundModel)
-          : state.latestEntry,
+      watchFace: defaultWatchFace,
+      latestEntry: _currentRoundModel != null ? _convertModelToHistoryEntry(_currentRoundModel) : state.latestEntry,
     );
     _currentRoundModel = RoundModel(_nowStamp);
-    _repository.upsert(_currentRoundModel!);
+    ref.read(stopwatchRepositoryProvider).upsert(_currentRoundModel!);
   }
 
   void pause() {
@@ -110,23 +101,30 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void resume() {
-    if (state is! Stopped) return;
+    if (state is! Paused) return;
     final now = DateTime.now();
-    state = Running(
-      watchFace: state.watchFace,
-      latestEntry: state.latestEntry,
-      laps: [...state.laps, _stopwatchValuesFromLatestCheckpoint(now)],
-    );
+    state = Running(watchFace: state.watchFace, latestEntry: state.latestEntry, laps: state.laps);
     _lastCheckpointTimestamp = now.millisecondsSinceEpoch;
     _updateAndStoreCurrentModel(Resume(_lastCheckpointTimestamp!));
   }
 
   void recordLap() async {
-    final now = DateTime.now();
-    final timestamp = now.millisecondsSinceEpoch;
-    //if we allow lap during pause, do not let the user record multiple laps while paused
-    if (timestamp == _lastCheckpointTimestamp) return;
-    final values = _stopwatchValuesFromLatestCheckpoint(now);
+    late final int timestamp;
+    if (state is Paused) {
+      //while the clock is not running, we lap the time it was stopped
+      //we allow lap during pause, but only once
+      if (_currentRoundModel?.events.last is Lap &&
+          _currentRoundModel?.events.last.timeStamp == _lastCheckpointTimestamp) {
+        return;
+      }
+      timestamp = _currentRoundModel!.events.last.timeStamp;
+    } else {
+      timestamp = _nowStamp;
+    }
+
+    final values = _stopwatchValuesFromDuration(
+      _totalRunningDurationSinceLastLapOrStart(_currentRoundModel!.events, isCurrentlyRunning: state is Running),
+    );
     state = state.copyWith(laps: [...state.laps, values]);
     _lastCheckpointTimestamp = timestamp;
     _updateAndStoreCurrentModel(Lap(timestamp));
@@ -145,17 +143,13 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void _updateAndStoreCurrentModel(StopWatchEvent event) {
-    _currentRoundModel = _currentRoundModel!.copyWith(
-      copyEvents: [..._currentRoundModel!.events, event],
-    );
-    _repository.upsert(_currentRoundModel!);
+    _currentRoundModel = _currentRoundModel!.copyWith(copyEvents: [..._currentRoundModel!.events, event]);
+    ref.read(stopwatchRepositoryProvider).upsert(_currentRoundModel!);
   }
 
-  WatchFace _stopwatchValuesFromLatestCheckpoint(DateTime current) {
-    if (_lastCheckpointTimestamp == null) return _defaultWatchFace;
-    final duration = current.difference(
-      DateTime.fromMillisecondsSinceEpoch(_lastCheckpointTimestamp!),
-    );
+  Watchface _stopwatchValuesFromLatestCheckpoint(DateTime current) {
+    if (_lastCheckpointTimestamp == null) return defaultWatchFace;
+    final duration = current.difference(DateTime.fromMillisecondsSinceEpoch(_lastCheckpointTimestamp!));
     return _stopwatchValuesFromDuration(duration);
   }
 
@@ -170,19 +164,37 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
 
   int get _nowStamp => DateTime.now().millisecondsSinceEpoch;
 
-  Duration _totalRunningDuration(List<StopWatchEvent> events) {
-    int totalDuration = 0;
-    for (final event in events) {
+  Duration _totalRunningDurationSinceLastLapOrStart(List<StopWatchEvent> events, {bool isCurrentlyRunning = false}) {
+    final index = events.lastIndexWhere((event) => event is Lap || event is Start);
+    bool wasWatchStoppedInThePreviousLap = index == 0 || events.elementAtOrNull(index - 1) is Pause;
+    //opening the ledger in a wsay the starting Laps condition is counted
+    int totalDuration = wasWatchStoppedInThePreviousLap ? 0 : 0 - events[index].timeStamp;
+    for (final event in [
+      ...events.sublist(index),
+      if (isCurrentlyRunning) End(_nowStamp),
+    ]) {
       if (event case Start() || Resume()) {
         totalDuration -= event.timeStamp;
-      } else {
+      } else if (event case Pause() || End()) {
         totalDuration += event.timeStamp;
       }
     }
     return Duration(milliseconds: totalDuration);
   }
 
-  WatchFace _stopwatchValuesFromDuration(Duration duration) {
+  Duration _totalRunningDuration(List<StopWatchEvent> events, {bool isCurrentlyRunning = false}) {
+    int totalDuration = 0;
+    for (final event in [...events, if (isCurrentlyRunning) End(_nowStamp)]) {
+      if (event case Start() || Resume()) {
+        totalDuration -= event.timeStamp;
+      } else if (event case Pause() || End()) {
+        totalDuration += event.timeStamp;
+      }
+    }
+    return Duration(milliseconds: totalDuration);
+  }
+
+  Watchface _stopwatchValuesFromDuration(Duration duration) {
     final totalMinutes = duration.inMinutes % 60;
     final totalSeconds = duration.inSeconds % 60;
     final totalMilliseconds = duration.inMilliseconds % 1000;
@@ -195,6 +207,4 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       (totalMilliseconds ~/ 10) % 10,
     );
   }
-
-  static const _defaultWatchFace = (0, 0, 0, 0, 0, 0);
 }
