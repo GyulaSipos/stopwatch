@@ -10,7 +10,9 @@ import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dar
 final stopwatchViewModelProvider = NotifierProvider<StopwatchViewModel, StopwatchViewState>(StopwatchViewModel.new);
 
 class StopwatchViewModel extends Notifier<StopwatchViewState> {
+  //here for fat lookups
   int? _lastCheckpointTimestamp;
+  //the model also acts as internal state, this way we dont need to expose it to UI
   RoundModel? _currentRoundModel;
   StreamSubscription? _tickerSub;
 
@@ -29,11 +31,12 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
             watchFace: _stopwatchValuesFromDuration(
               _totalRunningDuration(_currentRoundModel!.events, isCurrentlyRunning: true),
             ),
-
             currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
           );
         });
         //it's here to sync up the ui state one last time after watch is stopped
+        //this way we see the same number on the total counter and the first lap,
+        //even if the lap was recorded during pause
       } else if ((next is Paused || next is End) && prev.runtimeType != next.runtimeType) {
         state = state.copyWith(
           watchFace: _stopwatchValuesFromDuration(
@@ -44,10 +47,12 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       }
     });
     ref.onDispose(() {
+      //plug up leaky stream when it's no longer needed
       _tickerSub?.cancel();
     });
     ref.read(stopwatchRepositoryProvider).getLatestTwo().then((box) {
       if (box.noValue || box.value!.isEmpty) {
+        //first time using the app
         state = Stopped(watchFace: defaultWatchFace);
       } else {
         _currentRoundModel = box.value!.last;
@@ -90,6 +95,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void pause() {
+    //boi do i like not needing to write 'state is' three times
     if (state case Stopped() || Loading() || Paused()) return;
     _updateAndStoreCurrentModel(Pause(DateTime.now().millisecondsSinceEpoch));
     state = Paused(
@@ -102,16 +108,15 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
 
   void resume() {
     if (state is! Paused) return;
-    final now = DateTime.now();
     state = Running(watchFace: state.watchFace, latestEntry: state.latestEntry, laps: state.laps);
-    _lastCheckpointTimestamp = now.millisecondsSinceEpoch;
+    _lastCheckpointTimestamp = _nowStamp;
     _updateAndStoreCurrentModel(Resume(_lastCheckpointTimestamp!));
   }
 
   void recordLap() async {
     late final int timestamp;
     if (state is Paused) {
-      //while the clock is not running, we lap the time it was stopped
+      //while the clock is not running, we lap the time it was stopped at
       //we allow lap during pause, but only once
       if (_currentRoundModel?.events.last is Lap &&
           _currentRoundModel?.events.last.timeStamp == _lastCheckpointTimestamp) {
@@ -167,10 +172,11 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   Duration _totalRunningDurationSinceLastLapOrStart(List<StopWatchEvent> events, {bool isCurrentlyRunning = false}) {
     final index = events.lastIndexWhere((event) => event is Lap || event is Start);
     bool wasWatchStoppedInThePreviousLap = index == 0 || events.elementAtOrNull(index - 1) is Pause;
-    //opening the ledger in a wsay the starting Laps condition is counted
+    //opening the ledger in a way the starting Laps condition (clock was running or not) is counted
     int totalDuration = wasWatchStoppedInThePreviousLap ? 0 : 0 - events[index].timeStamp;
     for (final event in [
       ...events.sublist(index),
+      //need to close the ledger at now if timet otherwise is running
       if (isCurrentlyRunning) End(_nowStamp),
     ]) {
       if (event case Start() || Resume()) {
