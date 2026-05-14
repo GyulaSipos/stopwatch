@@ -1,26 +1,26 @@
 
 
-sealed class StopwatchViewState({final StopwatchValues? values, final HistoryEntry? latestEntry, final List<StopwatchValues> laps = const []}) {
+sealed class StopwatchViewState({final WatchFace? watchFace, final HistoryEntry? latestEntry, final List<WatchFace> laps = const []}) {
 
 StopwatchViewState copyWith({
-    StopwatchValues? values,
+    WatchFace? watchFace,
     HistoryEntry? latestEntry,
-    List<StopwatchValues>? laps,
+    List<WatchFace>? laps,
   }) {
     return switch (this) {
       Loading() => Loading(),
-      Running(values: final v, latestEntry: final le, laps: final l) => Running(
-          values: values ?? v,
+      Running(watchFace: final v, latestEntry: final le, laps: final l) => Running(
+          watchFace: watchFace ?? v,
           latestEntry: latestEntry ?? le,
           laps: laps ?? l,
         ),
-      Paused(values: final v, latestEntry: final le, laps: final l) => Paused(
-          values: values ?? v,
+      Paused(watchFace: final v, latestEntry: final le, laps: final l) => Paused(
+          watchFace: watchFace ?? v,
           latestEntry: latestEntry ?? le,
           laps: laps ?? l,
         ),
-      Stopped(values: final v, latestEntry: final le, laps: final l) => Stopped(
-          values: values ?? v,
+      Stopped(watchFace: final v, latestEntry: final le, laps: final l) => Stopped(
+          watchFace: watchFace ?? v,
           latestEntry: latestEntry ?? le,
           laps: laps ?? l,
         ),
@@ -31,12 +31,12 @@ StopwatchViewState copyWith({
 
 
 class Loading extends StopwatchViewState {}
-class Running({required super.values, super.latestEntry, super.laps}) extends StopwatchViewState {}
-class Paused({ required super.values, super.latestEntry, super.laps}) extends StopwatchViewState {}
-class Stopped({ super.values, super.latestEntry, super.laps}) extends StopwatchViewState {}
+class Running({required super.watchFace, super.latestEntry, super.laps}) extends StopwatchViewState {}
+class Paused({ required super.watchFace, super.latestEntry, super.laps}) extends StopwatchViewState {}
+class Stopped({ super.watchFace, super.latestEntry, super.laps}) extends StopwatchViewState {}
 
 
-typedef StopwatchValues = (
+typedef WatchFace = (
   int tenMinutes,
   int minutes,
   int tenSeconds,
@@ -45,4 +45,4 @@ typedef StopwatchValues = (
   int tensMilliseconds,
 );
 
-typedef HistoryEntry = (DateTime start, StopwatchValues values);
+typedef HistoryEntry = (DateTime start, WatchFace values);
