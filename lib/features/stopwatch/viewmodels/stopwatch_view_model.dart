@@ -31,12 +31,14 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
               DateTime.now().difference(
                 DateTime.fromMillisecondsSinceEpoch(_currentRoundModel!.id),
               ),
-            ), 
+            ),
+            currentLap: state.laps.isEmpty
+                ? null
+                : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
           );
         });
-        //TODO: implement ticker behavior
-        //advance total time
-        //advance latest lap time if present
+      } else {
+        _tickerSub?.cancel();
       }
     });
     ref.onDispose(() {
@@ -103,6 +105,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       watchFace: state.watchFace,
       latestEntry: state.latestEntry,
       laps: state.laps,
+      currentLap: state.currentLap,
     );
   }
 
@@ -135,7 +138,8 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
     state = Stopped(
       watchFace: state.watchFace,
       latestEntry: state.latestEntry,
-      laps: state.laps,
+      //since we done with this round, add the last lap to the laps
+      laps: [...state.laps, ?state.currentLap],
     );
     _updateAndStoreCurrentModel(End(_nowStamp));
   }
