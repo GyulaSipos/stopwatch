@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_model.dart';
+import 'package:stopwatch/features/stopwatch/views/widgets/buttons_row.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/dynamic_watchface_digit.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/lap_list.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/watchface_separator.dart';
@@ -35,36 +35,11 @@ class StopwatchScreen extends ConsumerWidget {
               ),
               ConstrainedBox(
                 constraints: BoxConstraints.loose(Size(MediaQuery.sizeOf(context).width / 1.5, 300)),
-                child: LapList())
+                child: LapList(),
+              ),
             ],
           ),
-          Positioned(
-            bottom: 20,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).start(),
-                  icon: Icon(Icons.play_arrow_outlined),
-                ),
-                IconButton(
-                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).pause(),
-                  icon: Icon(Icons.pause_circle_filled_outlined),
-                ),
-                IconButton(
-                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).resume(),
-                  icon: Icon(Icons.play_circle_fill),
-                ),
-                IconButton(
-                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).end(),
-                  icon: Icon(Icons.stop),
-                ),
-                IconButton(
-                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).recordLap(),
-                  icon: Icon(Icons.circle_rounded),
-                ),
-              ],
-            ),
-          ),
+          Positioned(bottom: 20, child: ButtonsRow()),
         ],
       ),
     );
