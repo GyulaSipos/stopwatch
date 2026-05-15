@@ -115,6 +115,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
 
   void recordLap() async {
     late final int timestamp;
+    if (state is Stopped) return;
     if (state is Paused) {
       //while the clock is not running, we lap the time it was stopped at
       //we allow lap during pause, but only once
