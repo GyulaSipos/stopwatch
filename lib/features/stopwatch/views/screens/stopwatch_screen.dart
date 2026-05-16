@@ -33,7 +33,8 @@ class StopwatchScreen extends ConsumerWidget {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          body: Stack(
+          body: 
+          Stack(
             fit: .expand,
             alignment: Alignment.center,
             children: [

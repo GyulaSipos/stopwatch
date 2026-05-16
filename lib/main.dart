@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stopwatch/features/stopwatch/views/screens/stopwatch_screen.dart';
+import 'package:stopwatch/features/stopwatch/views/screens/stopwatch_with_history_screen.dart';
 
 void main() {
   runApp(ProviderScope(child: const MainApp()));
@@ -12,7 +12,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: StopwatchScreen(),
+      home: StopwatchWithHistoryScreen(),
     );
   }
 }

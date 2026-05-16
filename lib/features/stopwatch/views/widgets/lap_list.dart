@@ -9,19 +9,21 @@ class LapList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final laps = ref.watch(stopwatchViewModelProvider.select((state) => state.laps.reversed.toList()));
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: CustomScrollView(
-        slivers: [
-          SliverList.builder(
-            itemCount: laps.length,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: LabeledWatchfaceWidget(label: Text('${laps.length - index}.'), watchFace: laps[index]),
+    return laps.isEmpty
+        ? SizedBox.shrink()
+        : ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false, overscroll: false),
+            child: CustomScrollView(
+              slivers: [
+                SliverList.builder(
+                  itemCount: laps.length,
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: LabeledWatchfaceWidget(label: Text('${laps.length - index}.'), watchFace: laps[index]),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 }
