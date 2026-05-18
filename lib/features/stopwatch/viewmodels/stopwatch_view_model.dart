@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch/core/box.dart';
-import 'package:stopwatch/core/calculate_total_running_duration.dart';
+import 'package:stopwatch/core/runtime_calculations.dart';
 import 'package:stopwatch/core/convert_model_to_history_entry.dart';
 import 'package:stopwatch/core/stopwatch_values_from_duration.dart';
-import 'package:stopwatch/core/total_running_duration_since_last_lap_or_start.dart';
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/repositories/stopwatch_repository.dart';
@@ -126,7 +125,9 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       timestamp = _nowStamp;
     }
 
-    final values = stopwatchValuesFromDuration(totalRunningDurationSinceLastLapOrStart(_currentRoundModel!.events));
+    final values = stopwatchValuesFromDuration(
+      calculateRunningDurationSinceLastLap(_currentRoundModel!.events),
+    );
     state = state.copyWith(laps: [...state.laps, values]);
     _lastCheckpointTimestamp = timestamp;
     _updateAndStoreCurrentModel(Lap(timestamp));
