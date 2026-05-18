@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_model.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/buttons_row.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/dynamic_watchface_digit.dart';
+import 'package:stopwatch/features/stopwatch/views/widgets/history_list_item.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/lap_list.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/watchface_separator.dart';
 
@@ -24,20 +25,23 @@ class StopwatchWithHistoryScreen extends ConsumerWidget {
               pinned: true,
               delegate: StopwatchHeaderDelegate(
                 minHeight: 160.0, // Watchface + Buttons + Padding
-                maxHeight: MediaQuery.of(context).size.height * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * (firstHistoryItem == null ? 1 : 0.9),
+                roundEdges: firstHistoryItem != null,
               ),
             ),
-            
+
+            if (firstHistoryItem != null) SliverToBoxAdapter(child: HistoryListItem(model: firstHistoryItem)),
+
             //this is the history
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(title: Text("History Item $index")),
-                ),
-                childCount: 20,
-              ),
-            ),
+            // SliverList(
+            //   delegate: SliverChildBuilderDelegate(
+            //     (context, index) => Card(
+            //       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            //       child: ListTile(title: Text("History Item $index")),
+            //     ),
+            //     childCount: 20,
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -48,8 +52,9 @@ class StopwatchWithHistoryScreen extends ConsumerWidget {
 class StopwatchHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double minHeight;
   final double maxHeight;
+  final bool roundEdges;
 
-  StopwatchHeaderDelegate({required this.minHeight, required this.maxHeight});
+  StopwatchHeaderDelegate({required this.minHeight, required this.maxHeight, required this.roundEdges});
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -59,7 +64,10 @@ class StopwatchHeaderDelegate extends SliverPersistentHeaderDelegate {
       builder: (context) {
         return Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(roundEdges ? 12 : 0),
+              topRight: Radius.circular(roundEdges ? 12 : 0),
+            ),
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Column(

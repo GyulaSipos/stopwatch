@@ -1,4 +1,6 @@
 
+import 'package:stopwatch/features/stopwatch/viewmodels/history_view_state.dart';
+
 sealed class StopwatchViewState({required final Watchface watchFace, final HistoryEntry? latestEntry, final Watchface? currentLap, final List<Watchface> laps = const []}) {
 
 StopwatchViewState copyWith({
@@ -47,6 +49,4 @@ typedef Watchface = (
   int hundredsMilliseconds,
   int tensMilliseconds,
 );
-
-typedef HistoryEntry = (DateTime start, Watchface values);
 const defaultWatchFace = (0, 0, 0, 0, 0, 0);

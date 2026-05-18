@@ -8,14 +8,17 @@ import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 class RoundModel {
   final List<StopWatchEvent> events;
   final int id;
-  RoundModel._(this.events, this.id);
+  final int? totalRunningDuration;
 
-  //we want to ensure that every RoundModel has a start, so we only allow instantiation externally with a timestamp
-  factory RoundModel(int startTimeStamp) =>
-      RoundModel._([Start(startTimeStamp)], startTimeStamp);
+  RoundModel._(this.events, this.id, this.totalRunningDuration);
+
+   //we want to ensure that every RoundModel has a start, so we only allow instantiation externally with a timestamp
+  factory RoundModel(int startTimeStamp, {int? totalRunningDuration}) =>
+      RoundModel._([Start(startTimeStamp)], startTimeStamp, totalRunningDuration);
 
   Map<String, dynamic> toMap() => {
     eventsKey: events.map((event) => event.toMap(id)).toList(),
+    totalRunningDurationKey: totalRunningDuration,
   };
 
   factory RoundModel.fromMap(Map<String, dynamic> map) {
@@ -24,11 +27,14 @@ class RoundModel {
       throw ArgumentError('Invalid RoundModel map');
     }
     final events = eventsMap.map((map) => StopWatchEvent.fromMap(map)).toList();
-    return RoundModel._(events, events.first.timeStamp);
+    final id = events.first.timeStamp;
+    final totalRunningDuration = map[totalRunningDurationKey] as int?;
+    return RoundModel._(events, id, totalRunningDuration);
   }
 
-  RoundModel copyWith({List<StopWatchEvent>? copyEvents}) =>
-      RoundModel._(copyEvents ?? events, id);
+  RoundModel copyWith({List<StopWatchEvent>? copyEvents, int? totalRunningDuration}) =>
+      RoundModel._(copyEvents ?? events, id, totalRunningDuration ?? this.totalRunningDuration);
 
   static const eventsKey = 'events';
+  static const totalRunningDurationKey = 'totalRunningDuration';
 }

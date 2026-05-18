@@ -39,7 +39,7 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
           case 0:
             await db.transaction((transaction) async {
               await transaction.execute(
-                'CREATE TABLE IF NOT EXISTS $_tableRoundModel (id INTEGER PRIMARY KEY);',
+                'CREATE TABLE IF NOT EXISTS $_tableRoundModel (id INTEGER PRIMARY KEY, ${RoundModel.totalRunningDurationKey} INTEGER);',
               );
               await transaction.execute(
                 'CREATE TABLE IF NOT EXISTS $_tableStopwatchEvent ($columnTimestamp INTEGER PRIMARY KEY, $columnType TEXT, $columnRoundModelId INTEGER REFERENCES $_tableRoundModel(id));',
