@@ -12,17 +12,20 @@ HistoryEntry? convertModelToHistoryEntry(RoundModel? model) {
       DateTime.fromMillisecondsSinceEpoch(model.events.first.timeStamp),
       stopwatchValuesFromDuration(Duration(milliseconds: model.totalRunningDuration!)),
     ),
-    laps: model.events.indexed
-        .map((indexed) {
-          if (indexed.$2 case Lap() || End()) {
-            return stopwatchValuesFromDuration(
-              totalRunningDurationSinceLastLapOrStart(model.events.sublist(0, indexed.$1 + 1)),
-            );
-          } else {
-            return null;
-          }
-        })
-        .whereType<Watchface>()
-        .toList(),
+    //if there is no lap, do not add the End event as lap
+    laps: model.events.any((event) => event is Lap)
+        ? model.events.indexed
+              .map((indexed) {
+                if (indexed.$2 case Lap() || End()) {
+                  return stopwatchValuesFromDuration(
+                    totalRunningDurationSinceLastLapOrStart(model.events.sublist(0, indexed.$1 + 1)),
+                  );
+                } else {
+                  return null;
+                }
+              })
+              .whereType<Watchface>()
+              .toList()
+        : [],
   );
 }

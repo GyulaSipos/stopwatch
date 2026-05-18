@@ -32,9 +32,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
         //and only display the real number when the watch is stopped. That would boost performance 10x
         _tickerSub = Stream.periodic(Duration(milliseconds: 16)).listen((_) {
           state = state.copyWith(
-            watchFace: stopwatchValuesFromDuration(
-              calculateTotalRunningDuration(_currentRoundModel!.events, isCurrentlyRunning: true),
-            ),
+            watchFace: stopwatchValuesFromDuration(calculateTotalRunningDuration(_currentRoundModel!.events)),
             currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
           );
         });
@@ -43,9 +41,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
         //even if the lap was recorded during pause
       } else if ((next is Paused || next is End) && prev.runtimeType != next.runtimeType) {
         state = state.copyWith(
-          watchFace: stopwatchValuesFromDuration(
-            calculateTotalRunningDuration(_currentRoundModel!.events, isCurrentlyRunning: false),
-          ),
+          watchFace: stopwatchValuesFromDuration(calculateTotalRunningDuration(_currentRoundModel!.events)),
           currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),
         );
       }
@@ -67,9 +63,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
           case Lap(:final timeStamp):
             _lastCheckpointTimestamp = timeStamp;
             state = Running(
-              watchFace: stopwatchValuesFromDuration(
-                calculateTotalRunningDuration(box.value!.last!.events, isCurrentlyRunning: true),
-              ),
+              watchFace: stopwatchValuesFromDuration(calculateTotalRunningDuration(box.value!.last!.events)),
               latestEntry: box.value!.length == 2 ? convertModelToHistoryEntry(box.value!.first) : null,
             );
           case Pause():
@@ -132,9 +126,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       timestamp = _nowStamp;
     }
 
-    final values = stopwatchValuesFromDuration(
-      totalRunningDurationSinceLastLapOrStart(_currentRoundModel!.events, isCurrentlyRunning: state is Running),
-    );
+    final values = stopwatchValuesFromDuration(totalRunningDurationSinceLastLapOrStart(_currentRoundModel!.events));
     state = state.copyWith(laps: [...state.laps, values]);
     _lastCheckpointTimestamp = timestamp;
     _updateAndStoreCurrentModel(Lap(timestamp));
@@ -143,7 +135,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   void end() {
     if (state case Loading() || Stopped()) return;
     if (_currentRoundModel == null) return;
-    _updateAndStoreCurrentModel(End(_nowStamp));
+    _updateAndStoreCurrentModel(End(state is Paused ? _currentRoundModel!.events.last.timeStamp : _nowStamp));
     state = Stopped(
       watchFace: state.watchFace,
       latestEntry: convertModelToHistoryEntry(_currentRoundModel),
@@ -154,9 +146,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
 
   void _updateAndStoreCurrentModel(StopWatchEvent event) {
     final events = [..._currentRoundModel!.events, event];
-    final totalRunningDuration = event is End
-        ? calculateTotalRunningDuration(events, isCurrentlyRunning: false).inMilliseconds
-        : null;
+    final totalRunningDuration = event is End ? calculateTotalRunningDuration(events).inMilliseconds : null;
     _currentRoundModel = _currentRoundModel!.copyWith(copyEvents: events, totalRunningDuration: totalRunningDuration);
     ref.read(stopwatchRepositoryProvider).upsert(_currentRoundModel!);
   }
