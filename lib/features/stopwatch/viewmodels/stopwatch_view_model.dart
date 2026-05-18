@@ -38,7 +38,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
         //it's here to sync up the ui state one last time after watch is stopped
         //this way we see the same number on the total counter and the first lap,
         //even if the lap was recorded during pause
-      } else if ((next is Paused || next is End) && prev.runtimeType != next.runtimeType) {
+      } else if ((next is Paused || next is Stopped) && prev.runtimeType != next.runtimeType) {
         state = state.copyWith(
           watchFace: stopwatchValuesFromDuration(calculateTotalRunningDuration(_currentRoundModel!.events)),
           currentLap: state.laps.isEmpty ? null : _stopwatchValuesFromLatestCheckpoint(DateTime.now()),

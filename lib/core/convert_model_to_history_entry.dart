@@ -1,10 +1,7 @@
 import 'package:stopwatch/core/runtime_calculations.dart';
 import 'package:stopwatch/core/stopwatch_values_from_duration.dart';
-
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
-import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/history_view_state.dart';
-import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dart';
 
 HistoryEntry? convertModelToHistoryEntry(RoundModel? model) {
   if (model == null || model.totalRunningDuration == null) return null;
@@ -13,20 +10,8 @@ HistoryEntry? convertModelToHistoryEntry(RoundModel? model) {
       DateTime.fromMillisecondsSinceEpoch(model.events.first.timeStamp),
       stopwatchValuesFromDuration(Duration(milliseconds: model.totalRunningDuration!)),
     ),
-    //if there is no lap, do not add the End event as lap
-    laps: model.events.any((event) => event is Lap)
-        ? model.events.indexed
-              .map((indexed) {
-                if (indexed.$2 case Lap() || End()) {
-                  return stopwatchValuesFromDuration(
-                    calculateRunningDurationSinceLastLap(model.events.sublist(0, indexed.$1 + 1)),
-                  );
-                } else {
-                  return null;
-                }
-              })
-              .whereType<Watchface>()
-              .toList()
-        : [],
+    laps: calculateLapDurations(
+      model.events,
+    ).map((duration) => stopwatchValuesFromDuration(duration)).toList(),
   );
 }
