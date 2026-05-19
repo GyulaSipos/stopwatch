@@ -7,6 +7,8 @@ class AppExceptionUnknown extends AppException {}
 
 class AppExceptionNotFound extends AppException {}
 
+class AppExceptionFailedToDelete extends AppException {}
+
 class AppExceptionUnimplemented extends AppException {}
 
 class AppExceptionAuth extends AppException {}

@@ -5,16 +5,15 @@ import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:stopwatch/features/stopwatch/services/round_model_local_data_source.dart';
 
 final stopwatchRepositoryProvider = Provider<IStopwatchRepository>(
-  (ref) => StopwatchRepository(
-    localDataSource: ref.watch(roundModelLocalDataSourceProvider),
-  ),
+  (ref) => StopwatchRepository(localDataSource: ref.watch(roundModelLocalDataSourceProvider)),
 );
 
 abstract class IStopwatchRepository {
-  Future<Box<List<RoundModel>>> getAll();
+  Future<Box<List<RoundModel>>> getAllHistory();
   Future<Box<RoundModel>> get(int id);
   Future<Box<List<RoundModel?>>> getLatestTwo();
   Future<Box<Null>> upsert(RoundModel model);
+  Future<Box<Null>> deleteLapsForId(int id);
 }
 
 //Right now this layer does nothing, jusst passes calls.
@@ -27,12 +26,15 @@ class StopwatchRepository extends IStopwatchRepository {
   Future<Box<RoundModel>> get(int id) => localDataSource.get(id);
 
   @override
-  Future<Box<List<RoundModel>>> getAll() => localDataSource.getAll();
+  Future<Box<List<RoundModel>>> getAllHistory() => localDataSource.getAllHistory();
 
   @override
-  Future<Box<List<RoundModel?>>> getLatestTwo() =>
-      localDataSource.getLatestTwo();
+  Future<Box<List<RoundModel?>>> getLatestTwo() => localDataSource.getLatestTwo();
 
   @override
   Future<Box<Null>> upsert(RoundModel model) => localDataSource.upsert(model);
-}
+  
+  @override
+  Future<Box<Null>> deleteLapsForId(int id) => localDataSource.deleteLapsForId(id);
+  }
+

@@ -21,7 +21,7 @@ class _ButtonsRowState extends ConsumerState<ButtonsRow> {
           AnimatedSize(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            child: state is! Paused
+            child: state is! StopwatchPaused
                 ? const SizedBox.shrink() // Becomes size 0
                 : Padding(
                     padding: const EdgeInsets.only(right: 8.0),
@@ -34,21 +34,21 @@ class _ButtonsRowState extends ConsumerState<ButtonsRow> {
           Flexible(
             fit: FlexFit.tight,
             child: ElevatedButton(
-              onPressed: () => state is Running
+              onPressed: () => state is StopwatchRunning
                   ? ref.read(stopwatchViewModelProvider.notifier).pause()
-                  : state is Paused
+                  : state is StopwatchPaused
                   ? ref.read(stopwatchViewModelProvider.notifier).resume()
                   : ref.read(stopwatchViewModelProvider.notifier).start(),
               child: AnimatedSwitcher(
                 duration: Duration(milliseconds: 250),
-                child: state is Running ? const Icon(Icons.pause) : const Icon(Icons.play_arrow),
+                child: state is StopwatchRunning ? const Icon(Icons.pause) : const Icon(Icons.play_arrow),
               ),
             ),
           ),
           AnimatedSize(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            child: state is Stopped
+            child: state is StopwatchStopped
                 ? const SizedBox.shrink()
                 : Padding(
                     padding: const EdgeInsets.only(left: 8.0),
