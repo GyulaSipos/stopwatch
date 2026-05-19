@@ -70,6 +70,16 @@ class _StopwatchScreenState extends ConsumerState<StopwatchScreen> {
 
             //only inject into the widget tree if the user has actually scrolled
             if (firstHistoryItem != null && _userHasScrolled) const HistoryList(),
+
+            //placeholder, but we see i could implement it if necessary
+            if (firstHistoryItem != null && _userHasScrolled)
+              //TODO: add theme waring colors here, also a nice little "are u sure" dialog
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(onPressed: () {}, child: Text('delete history')),
+                ),
+              ),
           ],
         ),
       ),
