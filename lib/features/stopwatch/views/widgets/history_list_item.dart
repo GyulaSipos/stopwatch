@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:stopwatch/features/stopwatch/viewmodels/history_view_state.dart';
+import 'package:stopwatch/features/stopwatch/viewmodels/history_entry.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/labeled_watchface_widget.dart';
 
 class HistoryListItem extends StatelessWidget {
@@ -9,7 +9,7 @@ class HistoryListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
       child: Card(
         child: Align(
           alignment: Alignment.centerRight,
@@ -21,6 +21,8 @@ class HistoryListItem extends StatelessWidget {
               children: [
                 FittedBox(
                   child: LabeledWatchfaceWidget(
+                    //here we could create a much nicer display of the time that displays the minimal info necessary
+                    //like: yesterday, 3 days ago, jun 13, 2025. dec. 31
                     label: Text(model.totalTimeRow.$1.toIso8601String()),
                     watchFace: model.totalTimeRow.$2,
                   ),

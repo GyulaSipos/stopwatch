@@ -1,11 +1,11 @@
 import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 
-Duration calculateTotalRunningDuration(List<StopWatchEvent> events) => _calculateDuration(events, false);
+Duration calculateTotalRunningDuration(List<StopWatchEvent>? events) => _calculateDuration(events, false);
 
-Duration calculateRunningDurationSinceLastLap(List<StopWatchEvent> events) => _calculateDuration(events, true);
+Duration calculateRunningDurationSinceLastLap(List<StopWatchEvent>? events) => _calculateDuration(events, true);
 
-Duration _calculateDuration(List<StopWatchEvent> events, bool fromLastLap) {
-  if (events.isEmpty) return Duration.zero;
+Duration _calculateDuration(List<StopWatchEvent>? events, bool fromLastLap) {
+  if (events == null || events.isEmpty) return Duration.zero;
 
   //normalize the list for the ledger
   final hasEnd = events.last is End;
