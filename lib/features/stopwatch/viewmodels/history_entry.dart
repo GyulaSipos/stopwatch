@@ -7,7 +7,11 @@ class HistoryEntry {
   HistoryEntry({required this.totalTimeRow, required this.laps});
 
   @override
-  bool operator ==(Object other) => other is HistoryEntry && other.totalTimeRow.$1.isAtSameMomentAs(totalTimeRow.$1);
+  bool operator ==(Object other) =>
+      //we dont need to fully check everything to be sure things are not the same
+      other is HistoryEntry &&
+      other.totalTimeRow.$1.isAtSameMomentAs(totalTimeRow.$1) &&
+      laps.length == other.laps.length;
 
   @override
   int get hashCode => totalTimeRow.hashCode;

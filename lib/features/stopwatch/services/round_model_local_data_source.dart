@@ -13,6 +13,7 @@ abstract class IRoundModelLocalDataSource {
   Future<Box<RoundModel>> get(int id);
   Future<Box<List<RoundModel?>>> getLatestTwo();
   Future<Box<Null>> upsert(RoundModel model);
+  Future<Box<Null>> deleteLapsForId(int id);
 }
 
 class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
@@ -50,15 +51,10 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
           //here to demonstrate how we can run migrations safely
         }
       },
+      //nuke the db here if needed during development
       onOpen: (db) async {
-        // await db.delete(_tableStopwatchEvent);
-        // await db.delete(_tableRoundModel);
-        // await db.execute(
-        //   'CREATE TABLE IF NOT EXISTS $_tableRoundModel (id INTEGER PRIMARY KEY, ${RoundModel.totalRunningDurationKey} INTEGER);',
-        // );
-        // await db.execute(
-        //   'CREATE TABLE IF NOT EXISTS $_tableStopwatchEvent ($columnTimestamp INTEGER, $columnType TEXT, $columnRoundModelId INTEGER REFERENCES $_tableRoundModel(id), PRIMARY KEY ($columnTimestamp, $columnType));',
-        // );
+        await db.delete(_tableStopwatchEvent);
+        await db.delete(_tableRoundModel);
       },
     );
   }
@@ -113,11 +109,13 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
         final eventsMap = modelsMaps[1];
         //iterate over the events and copy them into the appropriate models
         for (final eventMap in eventsMap) {
-          (((mapOfModelMaps[eventMap[columnTimestamp] as int]?[RoundModel.eventsKey] as Iterable?)
-                          ?.cast<Map<String, dynamic>>())
-                      ?.toList() ??
-                  [].toList())
-              .add(eventMap);
+          (mapOfModelMaps[eventMap[columnRoundModelId] as int]?[RoundModel.eventsKey] as List).add(eventMap);
+
+          // (((mapOfModelMaps[eventMap[columnRoundModelId] as int]?[RoundModel.eventsKey] as Iterable?)
+          //                 ?.cast<Map<String, dynamic>>())
+          //             ?.toList() ??
+          //         [].toList())
+          //     .add(eventMap);
         }
         return mapOfModelMaps.values.map((map) => RoundModel.fromMap(map)).toList().box();
       });
@@ -177,6 +175,17 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
       });
     } catch (e) {
       return AppExceptionNotFound().box();
+    }
+  }
+
+  @override
+  Future<Box<Null>> deleteLapsForId(int id) async {
+    try {
+      await _inited;
+      await _db.delete(_tableStopwatchEvent, where: "$columnRoundModelId = ? AND $columnType = 'Lap'", whereArgs: [id]);
+      return null.box();
+    } catch (e) {
+      return AppExceptionFailedToDelete().box();
     }
   }
 }

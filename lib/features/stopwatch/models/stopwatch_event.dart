@@ -30,15 +30,15 @@ sealed class StopWatchEvent {
   }
 }
 
-class Start(int super.timeStamp) extends StopWatchEvent {} //without the explicit int, compiler defaults to dynamic and fails to run the code
+class Start(super.timeStamp) extends StopWatchEvent {}
 
-class Lap(int super.timeStamp) extends StopWatchEvent {}
+class Lap(super.timeStamp) extends StopWatchEvent {}
 
-class Pause(int super.timeStamp) extends StopWatchEvent {}
+class Pause(super.timeStamp) extends StopWatchEvent {}
 
-class Resume(int super.timeStamp) extends StopWatchEvent {}
+class Resume(super.timeStamp) extends StopWatchEvent {}
 
-class End(int super.timeStamp) extends StopWatchEvent {}
+class End(super.timeStamp) extends StopWatchEvent {}
 
 const columnTimestamp = 'time_stamp';
 const columnRoundModelId = 'model_id';

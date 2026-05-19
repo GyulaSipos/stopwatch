@@ -8,6 +8,8 @@ import 'package:stopwatch/core/stopwatch_values_from_duration.dart';
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/repositories/stopwatch_repository.dart';
+import 'package:stopwatch/features/stopwatch/viewmodels/history_entry.dart';
+import 'package:stopwatch/features/stopwatch/viewmodels/history_view_model.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dart';
 
 final stopwatchViewModelProvider = NotifierProvider<StopwatchViewModel, StopwatchViewState>(StopwatchViewModel.new);
@@ -138,6 +140,20 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
     state = state.copyWith(laps: [...state.laps, values]);
     _lastCheckpointTimestamp = timestamp;
     _updateAndStoreCurrentModel(Lap(timestamp));
+  }
+
+  void clearLaps() {
+    _currentRoundModel = _currentRoundModel?.copyWith(
+      copyEvents: _currentRoundModel!.events.where((element) => element is! Lap).toList(),
+    );
+    ref.read(stopwatchRepositoryProvider).deleteLapsForId(_currentRoundModel!.id);
+    state = state.copyWith(
+      laps: [],
+      currentLap: null,
+      latestEntry: _currentRoundModel!.events.last is End
+          ? HistoryEntry(totalTimeRow: state.latestEntry!.totalTimeRow, laps: [])
+          : state.latestEntry,
+    );
   }
 
   void end() {

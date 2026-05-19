@@ -13,6 +13,7 @@ abstract class IStopwatchRepository {
   Future<Box<RoundModel>> get(int id);
   Future<Box<List<RoundModel?>>> getLatestTwo();
   Future<Box<Null>> upsert(RoundModel model);
+  Future<Box<Null>> deleteLapsForId(int id);
 }
 
 //Right now this layer does nothing, jusst passes calls.
@@ -32,4 +33,8 @@ class StopwatchRepository extends IStopwatchRepository {
 
   @override
   Future<Box<Null>> upsert(RoundModel model) => localDataSource.upsert(model);
-}
+  
+  @override
+  Future<Box<Null>> deleteLapsForId(int id) => localDataSource.deleteLapsForId(id);
+  }
+
