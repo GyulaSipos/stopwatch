@@ -16,8 +16,8 @@ class HistoryListItem extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
-              crossAxisAlignment: .end,
-              mainAxisSize: .min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 FittedBox(
                   child: LabeledWatchfaceWidget(

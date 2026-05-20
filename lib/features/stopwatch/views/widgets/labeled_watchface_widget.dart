@@ -14,11 +14,11 @@ class LabeledWatchfaceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: .min,
-      mainAxisAlignment: .end,
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         label,
-        Padding(padding: EdgeInsetsGeometry.only(right: 24)),
+        const Padding(padding: EdgeInsets.only(right: 24)),
         StaticWatchfaceDigit(watchFace.$1, fontSize: fontSize),
         StaticWatchfaceDigit(watchFace.$2, fontSize: fontSize),
         WatchfaceSeparator(fontSize: fontSize),

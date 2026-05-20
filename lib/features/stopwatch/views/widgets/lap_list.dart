@@ -12,19 +12,18 @@ class LapList extends ConsumerWidget {
     return laps.isEmpty
         ? SizedBox.shrink()
         : Align(
-            alignment: .centerRight,
+            alignment: Alignment.centerRight,
             child: Row(
-              mainAxisSize: .min,
-              // mainAxisAlignment: .end,
-              crossAxisAlignment: .start,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 //could trigger a nice staggered exit-right animation
                 IconButton(
-                  icon: Icon(Icons.clear_all_outlined),
+                  icon: const Icon(Icons.clear_all_outlined),
                   onPressed: () => ref.read(stopwatchViewModelProvider.notifier).clearLaps(),
                 ),
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: 180),
+                  constraints: const BoxConstraints(maxWidth: 180),
                   child: ScrollConfiguration(
                     behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false, overscroll: false),
                     child: CustomScrollView(
@@ -32,16 +31,19 @@ class LapList extends ConsumerWidget {
                         SliverList.builder(
                           itemCount: laps.length,
                           itemBuilder: (context, index) => Align(
-                            alignment: .centerLeft,
-                            child: LabeledWatchfaceWidget(
-                              label: Text(
-                                '${laps.length - index}.',
-                                style: TextStyle(
-                                  fontFamily: 'Seven Segment', // Prevents layout jitter
-                                  fontFeatures: const [FontFeature.tabularFigures()], // Extra insurance for alignment
+                            alignment: Alignment.centerLeft,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: LabeledWatchfaceWidget(
+                                label: Text(
+                                  '${laps.length - index}.',
+                                  style: const TextStyle(
+                                    fontFamily: 'Seven Segment', // Prevents layout jitter
+                                    fontFeatures: [FontFeature.tabularFigures()], // Extra insurance for alignment
+                                  ),
                                 ),
+                                watchFace: laps[index],
                               ),
-                              watchFace: laps[index],
                             ),
                           ),
                         ),

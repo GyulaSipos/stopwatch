@@ -1,11 +1,18 @@
 import 'package:stopwatch/features/stopwatch/viewmodels/history_entry.dart';
 
-sealed class StopwatchViewState({
-  required final Watchface watchFace,
-  final HistoryEntry? latestEntry,
-  final Watchface? currentLap,
-  final List<Watchface> laps = const [],
-}) {
+sealed class StopwatchViewState {
+  final Watchface watchFace;
+  final HistoryEntry? latestEntry;
+  final Watchface? currentLap;
+  final List<Watchface> laps;
+
+  StopwatchViewState({
+    required this.watchFace,
+    this.latestEntry,
+    this.currentLap,
+    this.laps = const [],
+  });
+
   StopwatchViewState copyWith({
     Watchface? watchFace,
     HistoryEntry? latestEntry,
@@ -39,16 +46,21 @@ sealed class StopwatchViewState({
   }
 }
 
-class StopwatchLoading({super.watchFace = defaultWatchFace}) extends StopwatchViewState {}
+class StopwatchLoading extends StopwatchViewState {
+  StopwatchLoading({super.watchFace = defaultWatchFace});
+}
 
-class StopwatchRunning({required super.watchFace, super.latestEntry, super.currentLap, super.laps})
-    extends StopwatchViewState {}
+class StopwatchRunning extends StopwatchViewState {
+  StopwatchRunning({required super.watchFace, super.latestEntry, super.currentLap, super.laps});
+}
 
-class StopwatchPaused({required super.watchFace, super.latestEntry, super.currentLap, super.laps})
-    extends StopwatchViewState {}
+class StopwatchPaused extends StopwatchViewState {
+  StopwatchPaused({required super.watchFace, super.latestEntry, super.currentLap, super.laps});
+}
 
-class StopwatchStopped({required super.watchFace, super.latestEntry, super.currentLap, super.laps})
-    extends StopwatchViewState {}
+class StopwatchStopped extends StopwatchViewState {
+  StopwatchStopped({required super.watchFace, super.latestEntry, super.currentLap, super.laps});
+}
 
 typedef Watchface = (
   int tenMinutes,

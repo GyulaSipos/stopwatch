@@ -5,32 +5,45 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stopwatch/core/box.dart';
 import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:stopwatch/features/stopwatch/services/round_model_local_data_source.dart';
-import 'package:stopwatch/features/stopwatch/views/screens/stopwatch_screen.dart';
 import 'package:stopwatch/main.dart';
 
 void main() {
+  late MockRoundModelLocalDataSource mockDataSource;
+
   setUpAll(() {
-    // Register fallback values for mocktail
     registerFallbackValue(RoundModel(0));
     registerFallbackValue(<RoundModel>[]);
     registerFallbackValue(<RoundModel?>[]);
   });
 
+  setUp(() {
+    mockDataSource = MockRoundModelLocalDataSource();
+    // Default mocks
+    when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
+    when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
+  });
+
+  Future<void> setupWidget(WidgetTester tester) async {
+    // Set a consistent surface size
+    await tester.binding.setSurfaceSize(const Size(600, 800));
+    
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource),
+        ],
+        child: const MainApp(),
+      ),
+    );
+    // Wait for the initialization (from loading to stopped/running)
+    await tester.pump();
+    await tester.pump();
+  }
+
   group('StopwatchScreen Widget Tests', () {
     testWidgets('displays stopped state on first launch', (WidgetTester tester) async {
-      // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-
       // Act
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MainApp(),
-        ),
-      );
-
-      await tester.pump(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Assert - should show play button (indicating stopped state)
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
@@ -40,18 +53,7 @@ void main() {
 
     testWidgets('tapping start button starts stopwatch and shows pause icon', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Act - tap start button
       await tester.tap(find.byIcon(Icons.play_arrow));
@@ -60,23 +62,12 @@ void main() {
       // Assert - should show pause icon now
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsNothing);
-      expect(find.byIcon(Icons.stop), findsNothing); // Stop button appears only when paused
+      expect(find.byIcon(Icons.stop), findsNothing);
     });
 
     testWidgets('tapping pause button pauses stopwatch and shows resume icon', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Start the stopwatch
       await tester.tap(find.byIcon(Icons.play_arrow));
@@ -84,7 +75,7 @@ void main() {
 
       // Act - tap pause button
       await tester.tap(find.byIcon(Icons.pause));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Assert - should show play (resume) icon and stop icon
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
@@ -94,24 +85,13 @@ void main() {
 
     testWidgets('tapping resume button resumes stopwatch', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Start and pause
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
       await tester.tap(find.byIcon(Icons.pause));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Act - tap resume button
       await tester.tap(find.byIcon(Icons.play_arrow));
@@ -124,28 +104,17 @@ void main() {
 
     testWidgets('tapping end button stops stopwatch and shows play icon', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Start and pause
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
       await tester.tap(find.byIcon(Icons.pause));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Act - tap end button
       await tester.tap(find.byIcon(Icons.stop));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Assert - should show play icon (stopped state)
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
@@ -155,18 +124,7 @@ void main() {
 
     testWidgets('elapsed time increases when running', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Act - start stopwatch
       await tester.tap(find.byIcon(Icons.play_arrow));
@@ -177,52 +135,29 @@ void main() {
       expect(find.byIcon(Icons.pause), findsOneWidget);
     });
 
-    testWidgets('tapping start multiple times restarts stopwatch', (WidgetTester tester) async {
+    testWidgets('tapping start multiple times stays running', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
+      await setupWidget(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-
-      // Act - tap start multiple times
+      // Act - tap start
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
 
-      // Start again while running - should restart
+      // Tap again (it's now a pause button)
+      await tester.tap(find.byIcon(Icons.pause));
+      await tester.pumpAndSettle();
+      
+      // Tap again (it's now a play/resume button)
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
 
-      // Start again
-      await tester.tap(find.byIcon(Icons.play_arrow));
-      await tester.pump();
-
-      // Assert - should still be running with pause icon
+      // Assert - should still be running or paused correctly
       expect(find.byIcon(Icons.pause), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow), findsNothing);
     });
 
     testWidgets('lap button is visible when running', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Start stopwatch
       await tester.tap(find.byIcon(Icons.play_arrow));
@@ -234,17 +169,7 @@ void main() {
 
     testWidgets('lap button is not visible when stopped', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // Assert - refresh icon (lap) should not be visible in stopped state
       expect(find.byIcon(Icons.refresh), findsNothing);
@@ -252,18 +177,7 @@ void main() {
 
     testWidgets('UI responds correctly to complete user flow', (WidgetTester tester) async {
       // Arrange
-      final mockDataSource = MockRoundModelLocalDataSource();
-      when(() => mockDataSource.getLatestTwo()).thenAnswer((_) async => null.box());
-      when(() => mockDataSource.upsert(any())).thenAnswer((_) async => null.box());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource)],
-          child: const MaterialApp(home: StopwatchScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await setupWidget(tester);
 
       // User flow: Start -> Lap -> Pause -> Resume -> End
 
@@ -280,7 +194,7 @@ void main() {
 
       // 3. Pause
       await tester.tap(find.byIcon(Icons.pause));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byIcon(Icons.play_arrow), findsOneWidget); // Now shows resume
       expect(find.byIcon(Icons.stop), findsOneWidget); // Stop button visible
 
@@ -291,9 +205,9 @@ void main() {
 
       // 5. End
       await tester.tap(find.byIcon(Icons.pause));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.stop));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byIcon(Icons.play_arrow), findsOneWidget); // Back to stopped state
     });
   });

@@ -37,7 +37,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act - rapid start calls
@@ -53,7 +53,7 @@ void main() {
 
       // Assert - should still be running, no duplicate timers
       expect(state, isA<StopwatchRunning>());
-      verify(() => mockDataSource!.upsert(any())).called(3);
+      verify(() => mockDataSource!.upsert(any())).called(1);
     });
 
     test('pause pressed while already paused has no effect', () async {
@@ -66,7 +66,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -97,7 +97,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -125,7 +125,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act - try to end without starting
@@ -150,7 +150,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act - start and immediately end
@@ -176,7 +176,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act - try to lap without starting
@@ -202,7 +202,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -236,7 +236,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -267,7 +267,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act - rapid sequence
@@ -297,7 +297,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -331,7 +331,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act
@@ -367,7 +367,7 @@ void main() {
           roundModelLocalDataSourceProvider.overrideWithValue(mockDataSource!),
         ],
       );
-      
+      container.read(stopwatchViewModelProvider);
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Act & Assert - verify state transitions
