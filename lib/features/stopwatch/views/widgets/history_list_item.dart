@@ -30,7 +30,13 @@ class HistoryListItem extends StatelessWidget {
                 ...model.laps.indexed.map(
                   (indexed) => FittedBox(
                     child: LabeledWatchfaceWidget(
-                      label: Text('${indexed.$1 + 1}.'),
+                      label: Text(
+                        '${indexed.$1 + 1}.',
+                        style: TextStyle(
+                          fontFamily: 'Seven Segment', // Prevents layout jitter
+                          fontFeatures: const [FontFeature.tabularFigures()], // Extra insurance for alignment
+                        ),
+                      ),
                       watchFace: indexed.$2,
                       fontSize: 18,
                     ),

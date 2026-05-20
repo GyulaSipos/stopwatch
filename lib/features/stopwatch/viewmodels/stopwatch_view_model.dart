@@ -9,13 +9,12 @@ import 'package:stopwatch/features/stopwatch/models/round_model.dart';
 import 'package:stopwatch/features/stopwatch/models/stopwatch_event.dart';
 import 'package:stopwatch/features/stopwatch/repositories/stopwatch_repository.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/history_entry.dart';
-import 'package:stopwatch/features/stopwatch/viewmodels/history_view_model.dart';
 import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dart';
 
 final stopwatchViewModelProvider = NotifierProvider<StopwatchViewModel, StopwatchViewState>(StopwatchViewModel.new);
 
 class StopwatchViewModel extends Notifier<StopwatchViewState> {
-  //here for fat lookups
+  //here for fast lookups
   int? _lastCheckpointTimestamp;
   //the model also acts as internal state, this way we dont need to expose it to UI
   RoundModel? _currentRoundModel;
@@ -23,6 +22,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
 
   @override
   StopwatchViewState build() {
+    //incremenatally update state
     listenSelf((prev, next) {
       _tickerSub?.cancel();
       if (next is StopwatchRunning && prev != next) {
@@ -51,6 +51,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
       //plug up leaky stream when it's no longer needed
       _tickerSub?.cancel();
     });
+    //get the initial state
     ref.read(stopwatchRepositoryProvider).getLatestTwo().then((box) {
       if (box.noValue || box.value!.isEmpty) {
         //first time using the app
@@ -103,7 +104,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void pause() {
-    //boi do i like not needing to write 'state is' three times
+    //boi do i like not needing to write 'state is X' three times
     if (state case StopwatchStopped() || StopwatchLoading() || StopwatchPaused()) return;
     _updateAndStoreCurrentModel(Pause(DateTime.now().millisecondsSinceEpoch));
     state = StopwatchPaused(

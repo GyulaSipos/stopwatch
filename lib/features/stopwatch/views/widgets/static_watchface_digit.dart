@@ -12,7 +12,7 @@ class StaticWatchfaceDigit extends StatelessWidget {
       '$digit',
       style: TextStyle(
         fontSize: fontSize,
-        fontFamily: 'monospace', // Prevents layout jitter
+        fontFamily: 'Seven Segment', // Prevents layout jitter
         fontFeatures: const [FontFeature.tabularFigures()], // Extra insurance for alignment
       ),
     );

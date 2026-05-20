@@ -8,7 +8,7 @@ typedef OnAppException = dynamic Function(AppException);
 typedef ToBox<T> = T? Function();
 
 extension Boxtensions<T> on Box<T> {
-  when(OnResult onResult, OnAppException onException) {
+  dynamic when(OnResult onResult, OnAppException onException) {
     if (this.$1.runtimeType is T) return onResult(this.$1);
     if (this.$2.runtimeType is AppException) return onException(this.$2!);
   }
@@ -21,7 +21,7 @@ extension Boxtensions<T> on Box<T> {
 
   bool get isEmpty => this.$1 == null && this.$2 == null;
 
-  (T?, AppException?) cast<T>() => (this.$1 as T?, this.$2);
+  (K?, AppException?) cast<K>() => (this.$1 as K?, this.$2);
 
   T? get value => this.$1;
 

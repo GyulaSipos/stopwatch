@@ -11,6 +11,7 @@ class HistoryEntry {
       //we dont need to fully check everything to be sure things are not the same
       other is HistoryEntry &&
       other.totalTimeRow.$1.isAtSameMomentAs(totalTimeRow.$1) &&
+      //if we delete laps, riverpod needs to trigger
       laps.length == other.laps.length;
 
   @override

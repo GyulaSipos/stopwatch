@@ -22,3 +22,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Seven Segment
+      fonts:
+        - asset: assets/fonts/CursedTimerUlil-Aznm.ttf

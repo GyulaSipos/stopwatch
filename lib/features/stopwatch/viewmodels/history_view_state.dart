@@ -3,7 +3,7 @@ import 'package:stopwatch/features/stopwatch/viewmodels/history_entry.dart';
 
 sealed class HistoryViewState({required final List<HistoryEntry> history}) {}
 
-class HistoryLoading({ List<HistoryEntry> super.history = const <HistoryEntry>[]}) extends HistoryViewState {}
-class HistoryLoaded({required  List<HistoryEntry> super.history}) extends HistoryViewState {}
-class HistoryError({ List<HistoryEntry> super.history = const <HistoryEntry>[], required AppException exception}) extends HistoryViewState {}
+class HistoryLoading({ super.history = const <HistoryEntry>[]}) extends HistoryViewState {}
+class HistoryLoaded({required super.history}) extends HistoryViewState {}
+class HistoryError({ super.history = const <HistoryEntry>[], required AppException exception}) extends HistoryViewState {}
 

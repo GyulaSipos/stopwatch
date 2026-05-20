@@ -3,7 +3,7 @@ import 'package:stopwatch/features/stopwatch/viewmodels/stopwatch_view_state.dar
 import 'package:stopwatch/features/stopwatch/views/widgets/static_watchface_digit.dart';
 import 'package:stopwatch/features/stopwatch/views/widgets/watchface_separator.dart';
 
-//Please only use this for static watchfaces, as its not persormant to rebuild everything in the frequency of a running one
+///Please only use this for static watchfaces, as its not performant to rebuild everything in the frequency of a running one
 class LabeledWatchfaceWidget extends StatelessWidget {
   const LabeledWatchfaceWidget({super.key, required this.label, required this.watchFace, this.fontSize = 25.0});
 

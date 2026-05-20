@@ -19,9 +19,12 @@ class LapList extends ConsumerWidget {
               crossAxisAlignment: .start,
               children: [
                 //could trigger a nice staggered exit-right animation
-                IconButton(icon: Icon(Icons.clear_all_outlined), onPressed: () => ref.read(stopwatchViewModelProvider.notifier).clearLaps()),
+                IconButton(
+                  icon: Icon(Icons.clear_all_outlined),
+                  onPressed: () => ref.read(stopwatchViewModelProvider.notifier).clearLaps(),
+                ),
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: 160),
+                  constraints: BoxConstraints(maxWidth: 180),
                   child: ScrollConfiguration(
                     behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false, overscroll: false),
                     child: CustomScrollView(
@@ -31,7 +34,13 @@ class LapList extends ConsumerWidget {
                           itemBuilder: (context, index) => Align(
                             alignment: .centerLeft,
                             child: LabeledWatchfaceWidget(
-                              label: Text('${laps.length - index}.'),
+                              label: Text(
+                                '${laps.length - index}.',
+                                style: TextStyle(
+                                  fontFamily: 'Seven Segment', // Prevents layout jitter
+                                  fontFeatures: const [FontFeature.tabularFigures()], // Extra insurance for alignment
+                                ),
+                              ),
                               watchFace: laps[index],
                             ),
                           ),
