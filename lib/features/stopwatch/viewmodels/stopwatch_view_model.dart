@@ -94,6 +94,7 @@ class StopwatchViewModel extends Notifier<StopwatchViewState> {
   }
 
   void start() {
+    if (state is StopwatchRunning || state is StopwatchPaused) return;
     _lastCheckpointTimestamp = _nowStamp;
     state = StopwatchRunning(
       watchFace: defaultWatchFace,
