@@ -76,15 +76,23 @@ void main() {
       notifier.pause();
       await Future.delayed(const Duration(milliseconds: 50));
       
-      // Try to pause again
+      final stateAfterFirstPause = container.read(stopwatchViewModelProvider);
+      expect(stateAfterFirstPause, isA<StopwatchPaused>());
+      final watchFace = stateAfterFirstPause.watchFace;
+
+      // Try to pause again twice
       notifier.pause();
       notifier.pause();
       await Future.delayed(const Duration(milliseconds: 50));
 
       final state = container.read(stopwatchViewModelProvider);
 
-      // Assert - should remain paused
+      // Assert - should remain paused and watch face should be equal
       expect(state, isA<StopwatchPaused>());
+      expect(state.watchFace, equals(watchFace));
+
+      // Ensure no extra calls were made on data source (1 for start, 1 for pause)
+      verify(() => mockDataSource!.upsert(any())).called(2);
     });
 
     test('resume pressed while running has no effect', () async {
@@ -113,6 +121,9 @@ void main() {
 
       // Assert - should remain running
       expect(state, isA<StopwatchRunning>());
+
+      // Ensure only 1 call is made on data source (for start)
+      verify(() => mockDataSource!.upsert(any())).called(1);
     });
 
     test('end pressed while stopped has no effect', () async {
@@ -138,6 +149,9 @@ void main() {
 
       // Assert - should remain stopped
       expect(state, isA<StopwatchStopped>());
+
+      // Ensure no calls were made on data source
+      verifyNever(() => mockDataSource!.upsert(any()));
     });
 
     test('end pressed immediately after start creates minimal round', () async {
@@ -189,6 +203,9 @@ void main() {
       // Assert - should remain stopped with no laps
       expect(state, isA<StopwatchStopped>());
       expect((state as StopwatchStopped).laps, isEmpty);
+
+      // Ensure no calls were made on data source
+      verifyNever(() => mockDataSource!.upsert(any()));
     });
 
     test('multiple laps can be recorded while running', () async {
@@ -246,7 +263,8 @@ void main() {
       notifier.pause();
       await Future.delayed(const Duration(milliseconds: 50));
       
-      // Lap while paused
+      // Lap while paused twice rapidly
+      notifier.recordLap();
       notifier.recordLap();
       await Future.delayed(const Duration(milliseconds: 50));
 
@@ -255,6 +273,9 @@ void main() {
       // Assert - should have 1 lap and still be paused
       expect(state, isA<StopwatchPaused>());
       expect((state as StopwatchPaused).laps.length, equals(1));
+
+      // Ensure only 3 upsert calls total (1 for start, 1 for pause, 1 for lap)
+      verify(() => mockDataSource!.upsert(any())).called(3);
     });
 
     test('rapid start-pause-resume sequence handled correctly', () async {

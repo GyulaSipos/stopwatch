@@ -173,9 +173,8 @@ void main() {
       // Assert - state should be Running
       expect(firstState, isA<StopwatchRunning>());
       expect(secondState, isA<StopwatchRunning>());
-
       // Note: The exact time values may vary due to async nature of the ticker
-      // We verify that the stopwatch is running and updating
+      expect(secondState.watchFace.isAfter(firstState.watchFace), true);
     });
 
     test('elapsed time stops increasing when paused', () async {
@@ -207,7 +206,7 @@ void main() {
       expect((pausedState1 as StopwatchPaused).watchFace, equals((pausedState2 as StopwatchPaused).watchFace));
     });
 
-    test('reset (end) button resets stopwatch to 0 and stops elapsed time', () async {
+    test('end stops elapsed time', () async {
       // Arrange
       when(() => mockRepository!.getLatestTwo()).thenAnswer((_) async => null.box());
       when(() => mockRepository!.upsert(any())).thenAnswer((_) async => null.box());
@@ -224,9 +223,6 @@ void main() {
 
       // Assert
       expect(stoppedState, isA<StopwatchStopped>());
-
-      // After end, the watchFace should show the final time, not 0
-      // The "reset" in this app means ending the current round
     });
 
     test('pressing start multiple times without pause does not cause unexpected behavior', () async {
@@ -252,7 +248,7 @@ void main() {
 
       // Assert - should still be running, no crashes or weird states
       expect(state, isA<StopwatchRunning>());
-      // Each start() call creates a new round, so we should be running
+
     });
 
     test('pause button does nothing when already paused', () async {

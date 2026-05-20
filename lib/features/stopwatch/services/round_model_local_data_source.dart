@@ -53,8 +53,8 @@ class RoundModelLocalDataSource extends IRoundModelLocalDataSource {
       },
       //nuke the db here if needed during development
       onOpen: (db) async {
-        await db.delete(_tableStopwatchEvent);
-        await db.delete(_tableRoundModel);
+        // await db.delete(_tableStopwatchEvent);
+        // await db.delete(_tableRoundModel);
       },
     );
   }

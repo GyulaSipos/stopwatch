@@ -6,12 +6,7 @@ sealed class StopwatchViewState {
   final Watchface? currentLap;
   final List<Watchface> laps;
 
-  StopwatchViewState({
-    required this.watchFace,
-    this.latestEntry,
-    this.currentLap,
-    this.laps = const [],
-  });
+  StopwatchViewState({required this.watchFace, this.latestEntry, this.currentLap, this.laps = const []});
 
   StopwatchViewState copyWith({
     Watchface? watchFace,
@@ -71,3 +66,16 @@ typedef Watchface = (
   int tensMilliseconds,
 );
 const defaultWatchFace = (0, 0, 0, 0, 0, 0);
+
+
+extension WatchfaceComparison on Watchface {
+  //useful for tests
+  bool isAfter(Watchface other) {
+    if ($1 != other.$1) return $1 > other.$1;
+    if ($2 != other.$2) return $2 > other.$2;
+    if ($3 != other.$3) return $3 > other.$3;
+    if ($4 != other.$4) return $4 > other.$4;
+    if ($5 != other.$5) return $5 > other.$5;
+    return $6 > other.$6;
+  }
+}
