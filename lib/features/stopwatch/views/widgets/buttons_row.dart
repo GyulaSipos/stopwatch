@@ -11,9 +11,22 @@ class ButtonsRow extends ConsumerStatefulWidget {
 }
 
 class _ButtonsRowState extends ConsumerState<ButtonsRow> {
+  late StopwatchViewState state;
+
+  @override
+  void initState() {
+    ref.listenManual(stopwatchViewModelProvider, (prev, next) {
+      if (prev.runtimeType != next.runtimeType) {
+        setState(() {
+          state = next;
+        });
+      }
+    }, fireImmediately: true);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stopwatchViewModelProvider);
     return SizedBox(
       width: MediaQuery.sizeOf(context).width - 24,
       child: Row(
@@ -41,7 +54,9 @@ class _ButtonsRowState extends ConsumerState<ButtonsRow> {
                   : ref.read(stopwatchViewModelProvider.notifier).start(),
               child: AnimatedSwitcher(
                 duration: Duration(milliseconds: 250),
-                child: state is StopwatchRunning ? const Icon(Icons.pause) : const Icon(Icons.play_arrow),
+                child: state is StopwatchRunning
+                    ? const Icon(Icons.pause, key: ValueKey('pause'))
+                    : const Icon(Icons.play_arrow, key: ValueKey('play')),
               ),
             ),
           ),
